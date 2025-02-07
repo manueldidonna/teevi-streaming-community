@@ -29,4 +29,5 @@ yarn-error.log*
 .npmignore
 .npm/
 
-.package-lock.json
+package-lock.json
+
