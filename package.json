@@ -1,22 +1,23 @@
 {
-  "name": "it.community.streamingcommunity",
-  "version": "1.0.0",
+  "name": "it.teevi.community.streamingcommunity",
+  "version": "0.0.1",
   "description": "Unofficial extension for StreamingCommunity",
   "private": true,
   "main": "index.ts",
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "test": "vitest --typecheck"
+    "test": "vitest --typecheck",
+    "preview": "npm run build && vite preview --host"
   },
   "author": "Teevi Community",
   "license": "ISC",
   "dependencies": {
-    "@teeviapp/core": "^0.1.0",
+    "@teeviapp/core": "^0.2.0",
     "cheerio": "^1.0.0"
   },
   "devDependencies": {
-    "@teeviapp/vite": "^0.1.0",
+    "@teeviapp/vite": "^0.2.0",
     "vite": "^6.1.0",
     "vitest": "^2.1.8"
   }
