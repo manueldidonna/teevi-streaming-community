@@ -1,23 +1,24 @@
 {
-  "name": "it.teevi.community.streamingcommunity",
+  "name": "it.teevi.manuel.streamingcommunity",
   "version": "0.0.1",
-  "description": "Unofficial extension for StreamingCommunity",
+  "description": "Estensione per StreamingCommunity, una piattaforma italiana di streaming di film e serie TV",
+  "homepage": "https://streamingcommunity.lu",
+  "author": "Manuel",
   "private": true,
   "main": "index.ts",
   "type": "module",
+  "license": "ISC",
   "scripts": {
     "build": "vite build",
     "test": "vitest --typecheck",
     "preview": "npm run build && vite preview --host"
   },
-  "author": "Teevi Community",
-  "license": "ISC",
   "dependencies": {
-    "@teeviapp/core": "^0.2.0",
+    "@teeviapp/core": "^0.5.1",
     "cheerio": "^1.0.0"
   },
   "devDependencies": {
-    "@teeviapp/vite": "^0.2.0",
+    "@teeviapp/vite": "^0.5.1",
     "vite": "^6.1.0",
     "vitest": "^2.1.8"
   }

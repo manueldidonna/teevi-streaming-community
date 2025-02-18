@@ -1,10 +1,15 @@
-import type { TeeviExtension } from "@teeviapp/core"
+import type {
+  TeeviMediaItem,
+  TeeviMetadataExtension,
+  TeeviShow,
+  TeeviShowEntry,
+  TeeviVideoAsset,
+  TeeviVideoExtension,
+} from "@teeviapp/core"
 import { fetchVixcloudPlaylist } from "./vixcloud"
 import { fetchHTML } from "./html"
 
-const DOMAIN = "paris"
-const BASE_URL = `https://streamingcommunity.${DOMAIN}`
-const CDN_BASE_URL = `https://cdn.streamingcommunity.${DOMAIN}/images/`
+const BASE_URL = new URL(import.meta.env.VITE_API_URL)
 
 type ApiImage = {
   filename: string
@@ -12,14 +17,19 @@ type ApiImage = {
 }
 
 // Helper function for extracting image URLs
-function findImage(collection: ApiImage[], type: ApiImage["type"]): string {
-  const image = collection.find((img) => img.type === type)
-  return image ? `${CDN_BASE_URL}${image.filename}` : ""
+function findImage(
+  collection: ApiImage[],
+  type: ApiImage["type"]
+): string | undefined {
+  const filename = collection.find((img) => img.type === type)?.filename
+  if (filename) {
+    const cdnURL = new URL(`https://cdn.${BASE_URL.hostname}`)
+    const imageURL = new URL(`/images/${filename}`, cdnURL)
+    return imageURL.toString()
+  }
 }
 
-const fetchShowsByQuery: TeeviExtension["fetchShowsByQuery"] = async (
-  query
-) => {
+async function fetchShowsByQuery(query: string): Promise<TeeviShowEntry[]> {
   type SearchShowApiModel = {
     name: string
     id: number
@@ -44,7 +54,7 @@ const fetchShowsByQuery: TeeviExtension["fetchShowsByQuery"] = async (
   })
 }
 
-const fetchShow: TeeviExtension["fetchShow"] = async (id) => {
+async function fetchShow(id: string): Promise<TeeviShow> {
   type ShowDetailsApiModel = {
     name: string
     plot: string
@@ -85,10 +95,10 @@ const fetchShow: TeeviExtension["fetchShow"] = async (id) => {
   }
 }
 
-const fetchMediaItems: TeeviExtension["fetchMediaItems"] = async (
-  id,
-  season?
-) => {
+async function fetchMediaItems(
+  id: string,
+  season?: number
+): Promise<TeeviMediaItem[]> {
   type SeasonApiModel = {
     props: { loadedSeason: { episodes: EpisodeApiModel[] } }
   }
@@ -127,7 +137,7 @@ const fetchMediaItems: TeeviExtension["fetchMediaItems"] = async (
   })
 }
 
-const fetchVideoAssets: TeeviExtension["fetchVideoAssets"] = async (id) => {
+async function fetchVideoAssets(id: string): Promise<TeeviVideoAsset[]> {
   const endpoint = new URL(`/iframe/${id}`, BASE_URL)
   const html = await fetchHTML(endpoint)
 
@@ -142,4 +152,4 @@ export default {
   fetchShow,
   fetchMediaItems,
   fetchVideoAssets,
-} satisfies TeeviExtension
+} satisfies TeeviMetadataExtension & TeeviVideoExtension
