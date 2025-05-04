@@ -5,7 +5,7 @@ export default {
   plugins: [
     teevi({
       name: "StreamingCommunity",
-      capabilities: ["metadata"],
+      capabilities: ["metadata", "video", "feed"],
     }),
   ],
 } satisfies UserConfig

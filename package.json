@@ -1,9 +1,9 @@
 {
-  "name": "it.teevi.manuel.streamingcommunity",
-  "version": "0.0.1",
-  "description": "Estensione per StreamingCommunity, una piattaforma italiana di streaming di film e serie TV",
-  "homepage": "https://streamingcommunity.lu",
-  "author": "Manuel",
+  "name": "yakan.streamingcommunity",
+  "version": "0.7.21",
+  "description": "Estensione per StreamingCommunity, piattaforma italiana di film e serie TV",
+  "homepage": "https://streamingcommunity.spa",
+  "author": "Yakan",
   "private": true,
   "main": "index.ts",
   "type": "module",
@@ -11,15 +11,20 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest --typecheck",
-    "preview": "npm run build && vite preview --host"
+    "preview": "npm run build && vite preview --host --port 4174",
+    "generate-collections": "npx vite-node src/scripts/generate-collections.ts",
+    "generate-trends": "npx vite-node src/scripts/generate-trends.ts",
+    "release": "npm run generate-collections && npm run generate-trends && npm run build"
   },
   "dependencies": {
-    "@teeviapp/core": "^0.5.1",
+    "@teeviapp/core": "^0.7.2",
     "cheerio": "^1.0.0"
   },
   "devDependencies": {
-    "@teeviapp/vite": "^0.5.1",
+    "@teeviapp/vite": "^0.7.2",
+    "@types/node": "^22.13.13",
     "vite": "^6.1.0",
+    "vite-node": "^3.0.9",
     "vitest": "^2.1.8"
   }
 }

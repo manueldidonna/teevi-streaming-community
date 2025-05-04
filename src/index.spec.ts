@@ -13,15 +13,15 @@ describe("fetchShow", () => {
     expect(show).toHaveProperty("id", "835-jurassic-park")
     expect(show).toHaveProperty("title", "Jurassic Park")
     expect(show).toHaveProperty("kind", "movie")
-    expect(show.seasonNumbers).toBeFalsy()
+    expect(show.seasons).toBeFalsy()
   })
-})
 
-describe("fetchMediaItems", () => {
-  it("should return a single movie item", async () => {
-    const mediaItems = await extension.fetchMediaItems("835-jurassic-park")
-    expect(mediaItems).toHaveLength(1)
-    expect(mediaItems[0]).toHaveProperty("type", "movie")
+  it("should return a series", async () => {
+    const show = await extension.fetchShow("147-mr-robot")
+    expect(show).toHaveProperty("id", "147-mr-robot")
+    expect(show).toHaveProperty("title", "Mr. Robot")
+    expect(show).toHaveProperty("kind", "series")
+    expect(show.seasons).toBeTruthy()
   })
 })
 

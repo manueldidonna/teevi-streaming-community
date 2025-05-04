@@ -32,5 +32,13 @@ export async function fetchVixcloudPlaylist(
     playlistURL.searchParams.append("h", "1")
   }
 
-  return { url: playlistURL.toString() }
+  const headers: Record<string, string> = {
+    Referer: url.toString(),
+  }
+
+  if (globalThis.Teevi?.userAgent) {
+    headers["User-Agent"] = globalThis.Teevi.userAgent
+  }
+
+  return { url: playlistURL.toString(), headers }
 }

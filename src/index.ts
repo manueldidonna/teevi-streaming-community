@@ -1,155 +1,162 @@
 import type {
-  TeeviMediaItem,
+  TeeviFeedCollection,
+  TeeviFeedExtension,
   TeeviMetadataExtension,
   TeeviShow,
   TeeviShowEntry,
+  TeeviShowEpisode,
+  TeeviShowStatus,
   TeeviVideoAsset,
   TeeviVideoExtension,
 } from "@teeviapp/core"
-import { fetchVixcloudPlaylist } from "./vixcloud"
-import { fetchHTML } from "./html"
-
-const BASE_URL = new URL(import.meta.env.VITE_API_URL)
-
-type ApiImage = {
-  filename: string
-  type: "poster" | "cover" | "cover_mobile"
-}
-
-// Helper function for extracting image URLs
-function findImage(
-  collection: ApiImage[],
-  type: ApiImage["type"]
-): string | undefined {
-  const filename = collection.find((img) => img.type === type)?.filename
-  if (filename) {
-    const cdnURL = new URL(`https://cdn.${BASE_URL.hostname}`)
-    const imageURL = new URL(`/images/${filename}`, cdnURL)
-    return imageURL.toString()
-  }
-}
+import { fetchVixcloudPlaylist } from "./utils/vixcloud"
+import {
+  fetchShowsByQuery as scFetchShowsByQuery,
+  findImageURL as scFindImageURL,
+  fetchShow as scFetchShow,
+  fetchEpisodes as scFetchEpisodes,
+  fetchVideoURL as scFetchVideoURL,
+} from "./api/sc-api"
+import { fetchShow as imdbFetchShow } from "./api/imdb-api"
+import { fetchShow as mazeFetchShow } from "./api/tvmaze-api"
+import collections from "../assets/sc_feed_collections.json"
+import trendingShows from "../assets/sc_feed_trending_shows.json"
 
 async function fetchShowsByQuery(query: string): Promise<TeeviShowEntry[]> {
-  type SearchShowApiModel = {
-    name: string
-    id: number
-    slug: string
-    type: string
-    images: ApiImage[]
-  }
+  const shows = await scFetchShowsByQuery(query)
 
-  const endpoint = new URL("/api/search", BASE_URL)
-  endpoint.searchParams.append("q", query)
-
-  const response = await fetch(endpoint.toString(), { method: "GET" })
-  const json: { data: SearchShowApiModel[] } = await response.json()
-
-  return json.data.map((show) => {
+  return shows.map((show) => {
     return {
       kind: show.type == "movie" ? "movie" : "series",
       id: `${show.id}-${show.slug}`,
       title: show.name,
-      posterURL: findImage(show.images, "poster"),
-    }
+      posterURL: scFindImageURL(show.images, "poster"),
+      year: new Date(show.last_air_date).getFullYear(),
+    } satisfies TeeviShowEntry
   })
 }
 
 async function fetchShow(id: string): Promise<TeeviShow> {
-  type ShowDetailsApiModel = {
-    name: string
-    plot: string
-    type: string
-    release_date: string
-    seasons_count: number // Number of seasons, or 0 if the type is 'movie'
-    genres: { name: string }[]
-    runtime?: number // minutes
-    images: ApiImage[]
+  const mapStatus = (scStatus?: string): TeeviShowStatus | undefined => {
+    if (!scStatus) return undefined
+    const status = scStatus.toLowerCase()
+    if (
+      [
+        "in production",
+        "post production",
+        "planned",
+        "pilot",
+        "rumored",
+        "announced",
+      ].includes(status)
+    ) {
+      return "upcoming"
+    }
+
+    if (status === "returning series") return "airing"
+    if (status === "canceled") return "canceled"
+
+    if (status === "released" || status === "ended") return "ended"
+
+    return undefined
   }
 
-  const endpoint = new URL(`/titles/${id}`, BASE_URL)
-  const html = await fetchHTML(endpoint)
+  const show = await scFetchShow(id)
+  console.log(show)
+  const isSeries = show.type !== "movie"
 
-  const json = html("#app").attr("data-page")!
-  const data = JSON.parse(json) as { props: { title: ShowDetailsApiModel } }
-  const details = data.props.title
+  let posterURL = scFindImageURL(show.images, "poster")
+  let overview = show.plot
+  let rating =
+    typeof show.score === "string" ? parseFloat(show.score) : show.score
 
-  const isSeries = details.type !== "movie"
-  const seasons =
-    isSeries && details.seasons_count > 0
-      ? Array.from({ length: details.seasons_count }, (_, i) => i + 1)
-      : undefined
+  // Fetch additional data from IMDB or TVMaze
+  if (show.imdb_id) {
+    try {
+      const imdbShow = await imdbFetchShow(show.imdb_id)
+      if (imdbShow.image) {
+        posterURL = imdbShow.image
+      }
+      if (imdbShow.aggregateRating?.ratingValue) {
+        rating = imdbShow.aggregateRating.ratingValue
+      }
+    } catch (error) {
+      console.error(`Failed to fetch data from IMDB: ${show.imdb_id} ${error}`)
+    }
+    try {
+      if (show.type == "tv") {
+        const mazeShow = await mazeFetchShow(show.imdb_id)
+        if (mazeShow.image?.original) {
+          posterURL = mazeShow.image.original
+        }
+      }
+    } catch (error) {
+      console.error(
+        `Failed to fetch data from TVMaze: ${show.imdb_id} ${error}`
+      )
+    }
+  }
+
+  const seasons = show.seasons?.map((s) => ({ number: s.number, name: s.name }))
 
   return {
     id,
     kind: isSeries ? "series" : "movie",
-    title: details.name,
-    overview: details.plot,
-    genres: details.genres.map((g) => g.name),
-    duration: (details.runtime || 0) * 60,
-    releaseDate: details.release_date,
-    seasonNumbers: seasons,
-    posterURL: findImage(details.images, "poster"),
+    title: show.name,
+    overview: overview,
+    genres: show.genres.map((g) => g.name),
+    duration: (show.runtime || 0) * 60,
+    releaseDate: show.release_date,
+    seasons: isSeries ? seasons : undefined,
+    posterURL: posterURL,
     backdropURL:
-      findImage(details.images, "cover") ||
-      findImage(details.images, "cover_mobile"),
+      scFindImageURL(show.images, "background") ||
+      scFindImageURL(show.images, "cover_mobile") ||
+      scFindImageURL(show.images, "cover"),
+    logoURL: scFindImageURL(show.images, "logo"),
+    rating: rating,
+    status: mapStatus(show.status),
   }
 }
 
-async function fetchMediaItems(
+async function fetchEpisodes(
   id: string,
-  season?: number
-): Promise<TeeviMediaItem[]> {
-  type SeasonApiModel = {
-    props: { loadedSeason: { episodes: EpisodeApiModel[] } }
-  }
+  season: number
+): Promise<TeeviShowEpisode[]> {
+  const [numericId] = id.split("-")
+  const episodes = await scFetchEpisodes(id, season)
 
-  type EpisodeApiModel = {
-    id: number
-    number: number
-    name?: string
-    plot?: string
-    duration?: number
-    images: ApiImage[]
-  }
-
-  const numericId = id.split("-")[0]
-
-  if (!season) {
-    return [{ type: "movie", id: numericId }]
-  }
-
-  const endpoint = new URL(`/titles/${id}/stagione-${season}`, BASE_URL)
-  const html = await fetchHTML(endpoint)
-
-  const json = html("#app").attr("data-page")!
-  const data = JSON.parse(json) as SeasonApiModel
-
-  return data.props.loadedSeason.episodes.map((episode) => {
+  return episodes.map((episode) => {
     return {
-      type: "episode",
       id: `${numericId}?episode_id=${episode.id}`,
       number: episode.number,
       overview: episode.plot,
       title: episode.name,
-      durationInSeconds: (episode.duration || 0) * 60,
-      thumbnailURL: findImage(episode.images, "cover"),
-    }
+      duration: (episode.duration || 0) * 60,
+      thumbnailURL: scFindImageURL(episode.images, "cover"),
+    } satisfies TeeviShowEpisode
   })
 }
 
 async function fetchVideoAssets(id: string): Promise<TeeviVideoAsset[]> {
-  const endpoint = new URL(`/iframe/${id}`, BASE_URL)
-  const html = await fetchHTML(endpoint)
+  const videoURL = await scFetchVideoURL(id)
+  const asset = await fetchVixcloudPlaylist(new URL(videoURL))
+  return [asset]
+}
 
-  const iframeURL = html("iframe").attr("src")!
-  const source = await fetchVixcloudPlaylist(new URL(iframeURL))
+async function fetchFeedCollections(): Promise<TeeviFeedCollection[]> {
+  return collections as TeeviFeedCollection[]
+}
 
-  return [source]
+async function fetchTrendingShows(): Promise<TeeviShow[]> {
+  return trendingShows as TeeviShow[]
 }
 
 export default {
   fetchShowsByQuery,
   fetchShow,
-  fetchMediaItems,
+  fetchEpisodes,
   fetchVideoAssets,
-} satisfies TeeviMetadataExtension & TeeviVideoExtension
+  fetchFeedCollections,
+  fetchTrendingShows,
+} satisfies TeeviMetadataExtension & TeeviVideoExtension & TeeviFeedExtension
