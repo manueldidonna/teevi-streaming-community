@@ -97,6 +97,7 @@ export async function fetchShowsFromArchive(
 
   function createEndpoint(request: SCArchiveRequest, page: number): URL {
     const endpoint = new URL(`api/archive`, API_URL)
+    endpoint.searchParams.append("lang", "it")
     if (request.sorting !== "release_date") {
       endpoint.searchParams.append("sort", request.sorting)
     }
@@ -147,7 +148,7 @@ export async function fetchShowsFromArchive(
       headers: {
         Accept: "application/json",
         Referer: new URL(
-          `archivio?${endpoint.searchParams}`,
+          `it/archivio?${endpoint.searchParams}`,
           API_URL
         ).toString(),
         host: API_URL.hostname,
@@ -185,6 +186,7 @@ export async function fetchShowsFromArchive(
 export async function fetchShowsByQuery(query: string): Promise<SCShowEntry[]> {
   const endpoint = new URL("api/search", API_URL)
   endpoint.searchParams.append("q", query)
+  endpoint.searchParams.append("lang", "it")
 
   const response = await fetch(endpoint.toString(), { method: "GET" })
 
@@ -205,7 +207,7 @@ export async function fetchShow(id: string): Promise<SCShow> {
     }
   }
 
-  const endpoint = new URL(`titles/${id}`, API_URL)
+  const endpoint = new URL(`it/titles/${id}`, API_URL)
   const html = await fetchHTML(endpoint)
 
   const json = html("#app").attr("data-page")
@@ -230,7 +232,7 @@ export async function fetchEpisodes(
     }
   }
 
-  const endpoint = new URL(`titles/${id}/stagione-${season}`, API_URL)
+  const endpoint = new URL(`it/titles/${id}/stagione-${season}`, API_URL)
   const html = await fetchHTML(endpoint)
 
   const json = html("#app").attr("data-page")
@@ -244,7 +246,7 @@ export async function fetchEpisodes(
 }
 
 export async function fetchVideoURL(id: string): Promise<string> {
-  const endpoint = new URL(`iframe/${id}`, API_URL)
+  const endpoint = new URL(`it/iframe/${id}`, API_URL)
   const html = await fetchHTML(endpoint)
 
   const iframeURL = html("iframe").attr("src")

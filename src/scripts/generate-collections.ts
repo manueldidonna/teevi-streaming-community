@@ -219,7 +219,6 @@ async function fetchCollection(
   const collection = {
     name: request.name,
     id: `sc-${request.type}-${request.name.toLowerCase().replace(/\s/g, "-")}`,
-    //count: shows.length,
     shows: shows.map((show) => {
       return {
         kind: show.type == "movie" ? "movie" : "series",
