@@ -62,7 +62,6 @@ async function fetchShow(id: string): Promise<TeeviShow> {
   }
 
   const show = await scFetchShow(id)
-  console.log(show)
   const isSeries = show.type !== "movie"
 
   let posterURL = scFindImageURL(show.images, "poster")

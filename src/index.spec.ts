@@ -25,6 +25,15 @@ describe("fetchShow", () => {
   })
 })
 
+test("fetchEpisodes", async () => {
+  const episodes = await extension.fetchEpisodes("147-mr-robot", 1)
+  expect(episodes.length).toBeGreaterThan(0)
+  expect(episodes[0]).toHaveProperty("id")
+  expect(episodes[0]).toHaveProperty("number")
+  expect(episodes[0]).toHaveProperty("overview")
+  expect(episodes[0]).toHaveProperty("title")
+})
+
 test("fetchVideoAssets", async () => {
   const videoAssets = await extension.fetchVideoAssets("835")
   expect(videoAssets).toHaveLength(1)

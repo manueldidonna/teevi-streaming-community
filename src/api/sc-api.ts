@@ -232,7 +232,7 @@ export async function fetchEpisodes(
     }
   }
 
-  const endpoint = new URL(`it/titles/${id}/stagione-${season}`, API_URL)
+  const endpoint = new URL(`it/titles/${id}/season-${season}`, API_URL)
   const html = await fetchHTML(endpoint)
 
   const json = html("#app").attr("data-page")
@@ -241,7 +241,6 @@ export async function fetchEpisodes(
   }
 
   const data = JSON.parse(json) as JSONData
-
   return data.props.loadedSeason.episodes
 }
 
