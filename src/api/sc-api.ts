@@ -55,6 +55,7 @@ export type SCShow = {
   score?: number | string
   images: SCImage[]
   imdb_id?: string
+  related?: SCShowEntry[]
 }
 
 export type SCEpisode = {
@@ -203,7 +204,11 @@ export async function fetchShowsByQuery(query: string): Promise<SCShowEntry[]> {
 export async function fetchShow(id: string): Promise<SCShow> {
   type JSONData = {
     props: {
-      title: SCShow
+      title: Omit<SCShow, "related">
+      sliders: {
+        name: string
+        titles: SCShowEntry[]
+      }[]
     }
   }
 
@@ -216,8 +221,10 @@ export async function fetchShow(id: string): Promise<SCShow> {
   }
 
   const data = JSON.parse(json) as JSONData
+  const show = data.props.title
+  const related = data.props.sliders.find((s) => s.name === "related")?.titles
 
-  return data.props.title
+  return { ...show, related } satisfies SCShow
 }
 
 export async function fetchEpisodes(

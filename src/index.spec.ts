@@ -13,6 +13,7 @@ describe("fetchShow", () => {
     expect(show).toHaveProperty("id", "835-jurassic-park")
     expect(show).toHaveProperty("title", "Jurassic Park")
     expect(show).toHaveProperty("kind", "movie")
+    expect(show.relatedShows).toBeTruthy()
     expect(show.seasons).toBeFalsy()
   })
 
@@ -21,6 +22,7 @@ describe("fetchShow", () => {
     expect(show).toHaveProperty("id", "147-mr-robot")
     expect(show).toHaveProperty("title", "Mr. Robot")
     expect(show).toHaveProperty("kind", "series")
+    expect(show.relatedShows).toBeTruthy()
     expect(show.seasons).toBeTruthy()
   })
 })

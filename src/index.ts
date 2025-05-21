@@ -16,24 +16,26 @@ import {
   fetchShow as scFetchShow,
   fetchEpisodes as scFetchEpisodes,
   fetchVideoURL as scFetchVideoURL,
+  SCShowEntry,
 } from "./api/sc-api"
 import { fetchShow as imdbFetchShow } from "./api/imdb-api"
 import { fetchShow as mazeFetchShow } from "./api/tvmaze-api"
 import collections from "../assets/sc_feed_collections.json"
 import trendingShows from "../assets/sc_feed_trending_shows.json"
 
+function mapSCShowEntryToTeeviShowEntry(show: SCShowEntry): TeeviShowEntry {
+  return {
+    kind: show.type == "movie" ? "movie" : "series",
+    id: `${show.id}-${show.slug}`,
+    title: show.name,
+    posterURL: scFindImageURL(show.images, "poster"),
+    year: new Date(show.last_air_date).getFullYear(),
+  } satisfies TeeviShowEntry
+}
+
 async function fetchShowsByQuery(query: string): Promise<TeeviShowEntry[]> {
   const shows = await scFetchShowsByQuery(query)
-
-  return shows.map((show) => {
-    return {
-      kind: show.type == "movie" ? "movie" : "series",
-      id: `${show.id}-${show.slug}`,
-      title: show.name,
-      posterURL: scFindImageURL(show.images, "poster"),
-      year: new Date(show.last_air_date).getFullYear(),
-    } satisfies TeeviShowEntry
-  })
+  return shows.map((show) => mapSCShowEntryToTeeviShowEntry(show))
 }
 
 async function fetchShow(id: string): Promise<TeeviShow> {
@@ -115,6 +117,9 @@ async function fetchShow(id: string): Promise<TeeviShow> {
     logoURL: scFindImageURL(show.images, "logo"),
     rating: rating,
     status: mapStatus(show.status),
+    relatedShows: show.related?.map((relatedShow) =>
+      mapSCShowEntryToTeeviShowEntry(relatedShow)
+    ),
   }
 }
 
